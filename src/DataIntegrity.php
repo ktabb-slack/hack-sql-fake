@@ -183,15 +183,21 @@ abstract final class DataIntegrity {
                 // handle json column type validation
                 if ($field_mysql_type === DataType::JSON) {
                   // null is okay
-                  if ($row[$field_name] is nonnull) {
-                    if (!Str\is_empty((string)$row[$field_name])) {
-                      // validate json string
-                      $json_obj = \json_decode((string)$row[$field_name]);
-                      if ($json_obj is null) {
-                        // invalid json
-                        throw new SQLFakeRuntimeException(
-                          "Invalid value '{$field_value}' for column '{$field_name}' on '{$schema['name']}', expected json",
-                        );
+                  if ($field_value is nonnull) {
+                    if (!Str\is_empty($field_value)) {
+                      // lowercase string 'null' can be inserted into mysql and it will be converted into proper null
+                      if ($field_value === 'null') {
+                        $field_value = null;
+                        $row[$field_name] = null;
+                      } else {
+                        // validate json string
+                        $json_obj = \json_decode($field_value as nonnull);
+                        if ($json_obj is null) {
+                          // invalid json
+                          throw new SQLFakeRuntimeException(
+                            "Invalid value '{$field_value}' for column '{$field_name}' on '{$schema['name']}', expected json",
+                          );
+                        }
                       }
                     } else {
                       // empty strings are not valid for json columns
